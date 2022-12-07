@@ -1,39 +1,48 @@
-const { Configuration, OpenAIApi } = require("openai");
+import fs from 'fs';
+import request from 'request';
+import chalk from 'chalk';
+import { Configuration, OpenAIApi } from "openai";
+
 const configuration = new Configuration({
   apiKey: process.env.OPEN_AI_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-var fs = require('fs'),
-    request = require('request');
 
-var download = function(uri, filename, callback){
-  request.head(uri, function(err, res, body){
-    console.log('content-type:', res.headers['content-type']);
-    console.log('content-length:', res.headers['content-length']);
+var download = (uri, filename, callback) => {
 
-    request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
-  });
+    request.head(uri, (err, res, body) => {
+        request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
+    });
 };
 
 
 const makeCall = async () => {
     let urls = []
+    let prompt = "Space with rivers floating throughout connecting galaxies with sparkling atoms everywhere, Hyper Detail 8K, Serenity, Calm"
+    let n = 5
+    let size = "512x512"
+
     const response = await openai.createImage({
-      prompt: "A cute baby sea otter",
-      n: 2,
-      size: "1024x1024",
+      prompt,
+      n,
+      size,
     });
 
+    if (response.status == 200) {
+        console.log(chalk.green('Request completed successfully...'))
+    } else {
+        console.log(chalk.red('There was an issue with your request...', response.status))
+    }
+    
+    console.log(chalk.blue('Downloading images...'));
+
     response.data.data.forEach((image, index) => {
-        console.log(image.url)
-        download(image.url, `image${index}.png`, function(){
-            console.log('done')
+        download(image.url, `image${index + 1}.png`, () => {
+           console.log(chalk.green(`Image ${index + 1} downloaded.`))
         })
 
     })
-
-
 
     return response
 }
